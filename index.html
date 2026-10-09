@@ -1,0 +1,1317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auction Platform Demo</title>
+<style>
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --surface-2:#eef3f4; --text:#0f1b1f; --muted:#5a6b70; --faint:#8a999d;
+  --border:#dbe3e5; --accent:#0b7a68; --accent-ink:#ffffff; --accent-soft:#e2f2ee; --accent-line:#a9d9cd;
+  --frame:#1b2428; --shadow:0 1px 2px rgba(15,27,31,.06),0 8px 24px rgba(15,27,31,.08);
+  --warn:#9a5b00; --warn-soft:#fdf3e2;
+  --radius:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1113; --surface:#131b1e; --surface-2:#1a2528; --text:#e6eef0; --muted:#97a8ad; --faint:#6d7f84;
+    --border:#25343a; --accent:#3cc9ae; --accent-ink:#03201a; --accent-soft:#11302a; --accent-line:#1f5a4e;
+    --frame:#000; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    --warn:#f0b35a; --warn-soft:#2e2414;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1113; --surface:#131b1e; --surface-2:#1a2528; --text:#e6eef0; --muted:#97a8ad; --faint:#6d7f84;
+  --border:#25343a; --accent:#3cc9ae; --accent-ink:#03201a; --accent-soft:#11302a; --accent-line:#1f5a4e;
+  --frame:#000; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  --warn:#f0b35a; --warn-soft:#2e2414;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.01em}
+p{margin:0}
+.tnum{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.xs{font-size:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- Header ---------- */
+.topbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;background:none;border:0;padding:0}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.demo-pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);white-space:nowrap}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:2px}
+.seg button{border:0;background:none;padding:5px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:10px;height:34px;min-width:34px;display:inline-grid;place-items:center;padding:0 10px;font-size:13px;font-weight:600}
+.icon-btn:hover{border-color:var(--accent-line)}
+.menu{position:relative}
+.menu-list{position:absolute;right:0;top:40px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:220px;display:none;z-index:40}
+.menu.open .menu-list{display:block}
+.menu-list button{display:flex;width:100%;gap:10px;align-items:center;border:0;background:none;padding:8px 10px;border-radius:8px;text-align:left;font-size:14px}
+.menu-list button:hover{background:var(--surface-2)}
+.menu-list .n{width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--muted)}
+.menu-list button.cur .n{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- Stepper ---------- */
+.stepper{max-width:1180px;margin:0 auto;padding:10px 16px 0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.stepper::-webkit-scrollbar{display:none}
+.step{flex:1;min-width:0;border:0;background:none;padding:6px 2px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left}
+.step .bar{height:4px;width:100%;border-radius:4px;background:var(--border);transition:background .3s}
+.step .lbl{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.step.done .bar{background:var(--accent-line)}
+.step.cur .bar{background:var(--accent)}
+.step.cur .lbl{color:var(--text);font-weight:600}
+@media (max-width:760px){.step .lbl{display:none}}
+@media (max-width:520px){.hide-sm{display:none}.topbar-inner{gap:8px}.demo-pill{font-size:11px}}
+
+/* ---------- Stage ---------- */
+main{max-width:1180px;margin:0 auto;padding:18px 16px 120px}
+.customer-view{display:flex;gap:40px;justify-content:center;align-items:flex-start}
+.phone{position:relative;width:390px;flex:none;height:min(820px,calc(100vh - 210px));min-height:640px;border:10px solid var(--frame);border-radius:46px;background:var(--bg);box-shadow:0 30px 60px -20px rgba(0,0,0,.35);overflow:hidden}
+.phone::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:96px;height:26px;border-radius:20px;background:var(--frame);z-index:12}
+.screen{position:absolute;inset:0;overflow-y:auto;padding:46px 18px 28px;scrollbar-width:thin}
+.screen.enter{animation:enter .32s ease}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.narrator{width:330px;flex:none;position:sticky;top:120px}
+.narrator .card{padding:18px}
+.narrator h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:8px}
+.narrator h2{font-size:20px;margin-bottom:10px}
+.narrator ul{margin:0;padding-left:18px;color:var(--muted)}
+.narrator li{margin:6px 0}
+.investor-view{max-width:1080px;margin:0 auto}
+@media (max-width:900px){
+  .customer-view{flex-direction:column;align-items:center;gap:18px}
+  .narrator{position:static;width:100%;max-width:520px}
+}
+@media (max-width:520px){
+  .phone{width:100%;height:auto;min-height:0;border:0;border-radius:0;box-shadow:none;background:transparent;overflow:visible}
+  .phone::before{display:none}
+  .screen{position:static;padding:4px 0 10px;overflow:visible}
+  main{padding-top:10px}
+}
+
+/* ---------- Bottom nav ---------- */
+.stepnav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
+.stepnav-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.stepnav .label{flex:1;text-align:center;font-size:13px;color:var(--muted)}
+.stepnav .label b{color:var(--text)}
+
+/* ---------- Common UI ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:12px;padding:11px 16px;font-weight:600;font-size:15px;background:var(--accent);color:var(--accent-ink);transition:transform .08s,filter .15s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{border-color:var(--accent-line)}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;transform:none}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.link{border:0;background:none;color:var(--accent);font-weight:600;padding:0}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip.filling{background:var(--accent-soft);color:var(--accent)}
+.chip.soon{border:1px solid var(--accent-line);color:var(--accent)}
+.chip.live{background:var(--accent);color:var(--accent-ink)}
+.chip.live::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.6s infinite}
+.chip.ended{background:var(--surface-2);color:var(--muted)}
+.chip.example{background:var(--surface-2);color:var(--muted);font-weight:500}
+@keyframes pulse{50%{opacity:.35}}
+.progress{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .35s ease}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv div{background:var(--surface-2);border-radius:10px;padding:9px 11px}
+.kv dt,.kv .k{font-size:12px;color:var(--muted)}
+.kv .v{font-weight:650}
+.ptile{width:56px;height:56px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.ptile svg{width:30px;height:30px}
+.ptile.lg{width:100%;height:150px;border-radius:18px}
+.ptile.lg svg{width:84px;height:84px}
+.screen-title{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.screen-title h2{font-size:22px}
+.wallet-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:600}
+.backlink{border:0;background:none;color:var(--muted);font-weight:600;padding:0;display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
+.note{font-size:12px;color:var(--faint);text-align:center;margin-top:12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+
+/* Landing */
+.hero-badge{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:999px;margin-bottom:14px}
+.hero h1{font-size:30px;line-height:1.12;margin-bottom:12px;letter-spacing:-.02em}
+.hero p{color:var(--muted);margin-bottom:20px}
+.how{display:flex;flex-direction:column;gap:10px;margin:18px 0 22px}
+.how .item{display:flex;gap:12px;align-items:flex-start;padding:14px}
+.how .num{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.how h4{font-size:15px;margin-bottom:2px}
+.how p{font-size:13px;color:var(--muted)}
+
+/* Auction cards */
+.acard{display:block;width:100%;text-align:left;padding:14px;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);transition:border-color .15s,transform .1s}
+.acard:hover{border-color:var(--accent-line)}
+.acard:active{transform:scale(.99)}
+.acard h3{font-size:15px;margin-bottom:4px}
+.acard .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0 10px}
+.acard .meta .k{font-size:11px;color:var(--muted)}
+.acard .meta .v{font-size:13px;font-weight:650}
+.acard .fill{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+
+/* Rules */
+.rules{padding:14px 16px}
+.rules h3{font-size:15px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.rules ul{margin:0;padding:0;list-style:none}
+.rules li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border);font-size:14px}
+.rules li:first-child{border-top:0}
+.rules li svg{flex:none;width:18px;height:18px;color:var(--accent);margin-top:2px}
+.cost{padding:14px 16px;background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--radius)}
+.cost .big{font-size:17px;font-weight:700;margin-bottom:4px}
+
+/* Sheet */
+.sheet-wrap{position:absolute;inset:0;z-index:20;display:none}
+.sheet-wrap.open{display:block}
+.sheet-back{position:absolute;inset:0;background:rgba(5,12,14,.45);animation:fade .2s}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:22px 22px 0 0;padding:20px 18px 26px;animation:up .28s ease;max-height:85%;overflow:auto}
+.sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border);margin:-8px auto 14px}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+@media (max-width:520px){.sheet-wrap{position:fixed;z-index:60}}
+.line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.line:last-child{border-bottom:0}
+.spinner{width:36px;height:36px;border-radius:50%;border:3px solid var(--accent-soft);border-top-color:var(--accent);animation:spin .8s linear infinite;margin:18px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.okmark{width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;margin:6px auto 12px;animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+
+/* Notification */
+.notif{position:absolute;left:10px;right:10px;top:-120px;z-index:15;transition:top .45s cubic-bezier(.2,.9,.3,1.2)}
+.notif.show{top:42px}
+.notif .n{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:16px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(12px);border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.notif .ic{width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.notif .t{font-size:13px;font-weight:700}
+.notif .d{font-size:13px;color:var(--muted)}
+@media (max-width:520px){.notif{position:fixed;top:-140px}.notif.show{top:12px}}
+
+/* Waiting */
+.bigcount{text-align:center;padding:22px 16px}
+.bigcount .num{font-size:52px;font-weight:750;letter-spacing:-.03em;line-height:1}
+.bigcount .of{color:var(--muted);font-size:14px;margin:6px 0 14px}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:flex;gap:12px;padding:8px 0;font-size:14px;color:var(--muted)}
+.timeline .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex:none;display:grid;place-items:center;font-size:11px}
+.timeline li.done{color:var(--text)}
+.timeline li.done .dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.timeline li.now .dot{border-color:var(--accent)}
+
+/* Live */
+.live-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.live-top .ptile{width:42px;height:42px;border-radius:11px}
+.live-top .ptile svg{width:24px;height:24px}
+.price-card{padding:16px}
+.price{font-size:40px;font-weight:750;letter-spacing:-.03em;line-height:1.05;transition:color .2s}
+.price.bump{animation:bump .25s ease}
+@keyframes bump{50%{transform:translateY(-2px)}}
+.range-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.timer-row{display:flex;align-items:center;gap:14px;padding:12px 16px}
+.ring{position:relative;width:62px;height:62px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;font-weight:750;font-size:18px}
+.bid-btn{width:100%;border:0;border-radius:18px;background:var(--accent);color:var(--accent-ink);padding:18px;font-size:20px;font-weight:750;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .08s}
+.bid-btn small{font-size:12px;font-weight:600;opacity:.85}
+.bid-btn:active{transform:scale(.97)}
+.panel h4{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)}
+.feed li:last-child{border-bottom:0}
+.feed li.new{animation:feedin .3s ease}
+@keyframes feedin{from{opacity:0;transform:translateX(-6px)}}
+.feed li.me{color:var(--accent);font-weight:650}
+.lb{list-style:none;margin:0;padding:0;counter-reset:r}
+.lb li{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;font-size:13px;padding:5px 0}
+.lb li .r{color:var(--faint);font-weight:600}
+.lb li .bar{grid-column:2/4;height:4px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:-2px}
+.lb li .bar span{display:block;height:100%;background:var(--accent-line)}
+.lb li.me{font-weight:700;color:var(--accent)}
+.lb li.me .bar span{background:var(--accent)}
+.endcard{padding:16px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--radius);animation:enter .3s}
+.endcard h3{font-size:17px;margin-bottom:6px}
+
+/* Result */
+.result-hero{text-align:center;padding:22px 16px}
+.result-hero h2{font-size:22px;margin-bottom:8px}
+.result-hero .ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;margin:0 auto 14px;background:var(--accent);color:var(--accent-ink)}
+.result-hero .ic.soft{background:var(--surface-2);color:var(--muted)}
+
+/* Wallet */
+.balance{padding:20px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#000));color:var(--accent-ink);border-radius:20px}
+.balance .amt{font-size:36px;font-weight:750;letter-spacing:-.02em;margin:4px 0 2px}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+.hist li:last-child{border-bottom:0}
+.hist .ic{width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted)}
+.hist .ic.pos{background:var(--accent-soft);color:var(--accent)}
+.hist .t{font-size:14px;font-weight:600}
+.hist .d{font-size:12px;color:var(--muted)}
+.hist .a{margin-left:auto;font-weight:700;font-size:14px;white-space:nowrap}
+.hist .a.pos{color:var(--accent)}
+
+/* ---------- Investor ---------- */
+.inv-hero{padding:8px 0 18px}
+.inv-hero h1{font-size:34px;letter-spacing:-.02em;margin:6px 0 10px}
+.inv-hero p{color:var(--muted);max-width:720px;font-size:16px}
+.inv-nav{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 20px}
+.inv-nav a{font-size:13px;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid var(--border);background:var(--surface);padding:6px 12px;border-radius:999px}
+.inv-nav a:hover{color:var(--accent);border-color:var(--accent-line)}
+.section{margin:0 0 22px;padding:22px;scroll-margin-top:130px}
+.section h2{font-size:22px;margin-bottom:6px}
+.section .lead{color:var(--muted);margin-bottom:16px}
+.eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:820px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.section{padding:16px}.inv-hero h1{font-size:28px}}
+.flow{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.flow .box{flex:1;min-width:180px;padding:14px;border-radius:12px;background:var(--surface-2)}
+.flow .box h4{font-size:14px;margin-bottom:4px}
+.flow .box p{font-size:13px;color:var(--muted)}
+.inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+@media (max-width:820px){.inputs{grid-template-columns:1fr 1fr}}
+.field label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.field .in{display:flex;align-items:center;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
+.field .in:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field input{border:0;background:none;padding:9px 10px;width:100%;min-width:0;outline:none;font-variant-numeric:tabular-nums}
+.field .unit{padding:0 10px;color:var(--muted);font-size:13px;white-space:nowrap}
+.stat{padding:14px;border-radius:12px;background:var(--surface-2)}
+.stat .k{font-size:12px;color:var(--muted);font-weight:600}
+.stat .v{font-size:22px;font-weight:750;letter-spacing:-.01em;margin-top:2px}
+.stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+.stat.hl{background:var(--accent-soft);border:1px solid var(--accent-line)}
+.callout{padding:12px 14px;border-radius:12px;border:1px solid var(--border);font-size:14px;margin-top:14px}
+.callout.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.chart-wrap{position:relative;margin-top:18px}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.chart-tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:10px;padding:8px 10px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity .1s;transform:translate(-50%,-110%)}
+.chart-tip.on{opacity:1}
+.axis text{fill:var(--muted);font-size:11px}
+.feature{padding:16px;border-radius:12px;background:var(--surface-2)}
+.feature .fi{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.feature h4{font-size:15px;margin-bottom:4px}
+.feature p{font-size:13px;color:var(--muted)}
+.road{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative}
+@media (max-width:820px){.road{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.road{grid-template-columns:1fr}}
+.road .ph{padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface)}
+.road .ph .when{font-size:12px;font-weight:700;color:var(--accent)}
+.road .ph h4{margin:4px 0}
+.road .ph p{font-size:13px;color:var(--muted)}
+.road .ph.now{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.contact{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.contact .sel{user-select:all;font-weight:650;font-size:17px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.tbl th,.tbl td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{color:var(--muted);font-weight:600}
+details.tablev{margin-top:10px}
+details.tablev summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600}
+
+/* ---------- Demo panel ---------- */
+.demo-panel{position:fixed;right:16px;bottom:74px;z-index:35;width:230px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden}
+.demo-panel .hd{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--surface-2);border:0;width:100%}
+.demo-panel .bd{padding:8px;display:flex;flex-direction:column;gap:6px}
+.demo-panel .bd button{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 10px;text-align:left;font-size:13px;font-weight:600}
+.demo-panel .bd button:hover{border-color:var(--accent-line);color:var(--accent)}
+.demo-panel.collapsed .bd{display:none}
+.demo-panel.collapsed{width:auto}
+@media (max-width:520px){.demo-panel{right:10px;bottom:66px;width:200px}}
+
+.toast{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:70;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="brand" data-act="go" data-to="0" aria-label="Go to start">
+      <span class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 4 7-8"/></svg></span>
+      <span id="brandName">[PLATFORM NAME]</span>
+    </button>
+    <span class="demo-pill">Demo – simulated data</span>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="Currency">
+      <button data-act="cur" data-cur="TND" aria-pressed="true">TND</button>
+      <button data-act="cur" data-cur="EUR" aria-pressed="false">EUR</button>
+      <button data-act="cur" data-cur="USD" aria-pressed="false">USD</button>
+    </div>
+    <button class="icon-btn" data-act="theme" aria-label="Toggle light or dark mode" title="Light / dark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button class="icon-btn hide-sm" data-act="go" data-to="7">For investors</button>
+    <div class="menu" id="menu">
+      <button class="icon-btn" data-act="menu" aria-haspopup="true" aria-label="Jump to section">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="menu-list" id="menuList"></div>
+    </div>
+  </div>
+  <div class="stepper" id="stepper"></div>
+</header>
+
+<main>
+  <div class="customer-view" id="customerView">
+    <div class="phone" id="phone">
+      <div class="notif" id="notif"></div>
+      <div class="screen" id="screen"></div>
+      <div class="sheet-wrap" id="sheet"></div>
+    </div>
+    <aside class="narrator"><div class="card" id="narrator"></div></aside>
+  </div>
+  <div class="investor-view" id="investorView" hidden></div>
+</main>
+
+<nav class="stepnav" aria-label="Demo navigation">
+  <div class="stepnav-inner">
+    <button class="btn ghost sm" id="backBtn" data-act="back">← Back</button>
+    <div class="label" id="stepLabel"></div>
+    <button class="btn sm" id="nextBtn" data-act="next">Next →</button>
+  </div>
+</nav>
+
+<div class="demo-panel" id="demoPanel">
+  <button class="hd" data-act="panel"><span>Demo controls</span><span id="panelToggle">–</span></button>
+  <div class="bd">
+    <button data-act="restart">↺ Restart demo</button>
+    <button data-act="speed" id="speedBtn">⏩ Speed up auction (1×)</button>
+    <button data-act="showWin">Show winner result</button>
+    <button data-act="showLose">Show non-winner result</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   EDIT THESE PLACEHOLDERS
+   ============================================================ */
+const CONFIG = {
+  platform: '[PLATFORM NAME]',
+  name: '[NAME]',
+  email: '[EMAIL]',
+  firstMarket: '[first market]',
+  shipping: 15,               // example shipping cost, in TND
+  roadmap: [
+    { when: '[Q? 2026]', title: 'MVP', text: 'Web + mobile app, payments, auction engine, wallet and credits. Legal opinion in the first market.' },
+    { when: '[Q? 2027]', title: 'Pilot in [first market]', text: 'Limited catalog of popular electronics. Measure fill rate, repeat use and margin per auction.' },
+    { when: '[Q? 2027]', title: 'Retailer & brand partnerships', text: 'Source items at better cost. Brands use auctions for launches and stock clearance.' },
+    { when: '[Q? 2028]', title: 'Expansion', text: 'New categories and new markets: [market 2], [market 3]. Legal review before each launch.' }
+  ]
+};
+const RATES = { TND: 1, EUR: 0.29, USD: 0.34 }; // example conversion rates
+
+/* ============================================================
+   Icons
+   ============================================================ */
+const P = {
+  phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  laptop:'<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+  console:'<path d="M7 8h10a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.3 2.1L14 15h-4l-.7.6A3.5 3.5 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="16" cy="11" r=".7"/><circle cx="17.6" cy="13" r=".7"/>',
+  headphones:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',
+  watch:'<rect x="7" y="7" width="10" height="10" rx="2.5"/><path d="M9 7l.5-4h5l.5 4M9 17l.5 4h5l.5-4M12 10v2.5l1.5 1"/>',
+  tablet:'<rect x="4.5" y="2.5" width="15" height="19" rx="2"/><path d="M11 18.5h2"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  bell:'<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12.5h2M3 9h15"/>',
+  shield:'<path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  refund:'<path d="M4 9h11a5 5 0 0 1 0 10H8"/><path d="M8 5L4 9l4 4"/>',
+  tap:'<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-2.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L3.6 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/>',
+  cap:'<path d="M3 20h18M6 20V10M12 20V6M18 20v-6"/><path d="M3 4h18" stroke-dasharray="2 2"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  coins:'<ellipse cx="9" cy="7" rx="5" ry="2.5"/><path d="M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7"/><path d="M10 15.6c.9 1 2.8 1.6 5 1.6 2.8 0 5-1.1 5-2.5v-4c0-1.4-2.2-2.5-5-2.5"/>',
+  bank:'<path d="M3 10l9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+  doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  bolt:'<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  box:'<path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/>'
+};
+const ic = (n, s=20, sw=1.7) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rand = (a,b) => a + Math.random()*(b-a);
+function num(v, forceDec){
+  const r = Math.round(v*100)/100;
+  const d = forceDec ?? (Math.abs(r - Math.round(r)) < 0.005 ? 0 : 2);
+  return r.toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function m(tnd, opts={}){
+  const c = S.cur, v = tnd * RATES[c];
+  const sign = opts.sign ? (v > 0 ? '+' : v < 0 ? '−' : '') : (v < 0 ? '−' : '');
+  const a = Math.abs(v);
+  const s = c === 'TND' ? `${num(a, opts.dec)} TND` : c === 'EUR' ? `€${num(a, opts.dec)}` : `$${num(a, opts.dec)}`;
+  return sign + s;
+}
+function mShort(tnd){
+  const v = tnd*RATES[S.cur], a = Math.abs(v);
+  const n = a >= 10000 ? (a/1000).toFixed(0)+'k' : a >= 1000 ? (a/1000).toFixed(1).replace(/\.0$/,'')+'k' : Math.round(a).toString();
+  const s = S.cur==='TND' ? n : S.cur==='EUR' ? '€'+n : '$'+n;
+  return (v<0?'−':'') + s;
+}
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('on'), 2600);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ============================================================
+   Simulated data & state
+   ============================================================ */
+const STEPS = ['Welcome','Auctions','Details & join','Waiting room','Live auction','Result','Wallet','For investors'];
+const BOTS = ['User 4821','User 1093','User 7354','User 2610','User 5587','User 9032','User 3148','User 6675','User 8209','User 4417','User 7790','User 2356'];
+const BOT_W = [9,7,6,5,5,4,3,3,2,2,1,1];
+function baseAuctions(){
+  return [
+    {id:'phone', name:'Smartphone, 256 GB', type:'phone', value:1000, spots:100, filled:73, status:'filling'},
+    {id:'tablet', name:'Tablet, 11-inch', type:'tablet', value:1200, spots:100, filled:88, status:'filling'},
+    {id:'headphones', name:'Noise-cancelling headphones', type:'headphones', value:600, spots:60, filled:41, status:'filling'},
+    {id:'laptop', name:'Laptop, 14-inch', type:'laptop', value:3000, spots:100, filled:100, status:'soon', startsIn:'Starts in 25 min'},
+    {id:'console', name:'Gaming console', type:'console', value:1500, spots:100, filled:100, status:'live', livePrice:1012},
+    {id:'watch', name:'Smartwatch', type:'watch', value:900, spots:100, filled:100, status:'ended', finalPrice:684}
+  ].map(a => Object.assign(a, {fee:a.value*0.01, start:0, cap:a.value*0.8, inc:Math.max(1, Math.round(a.value/1000))}));
+}
+let S;
+function freshState(){
+  return {
+    step: 0,
+    cur: S ? S.cur : 'TND',
+    auctions: baseAuctions(),
+    selId: 'phone',
+    joined: false, joinedId: null, spotNo: null,
+    credits: 1.8,
+    history: [
+      {kind:'credit', title:'Credits back — Smartwatch', sub:'20% of your fee · example', amt:1.8, when:'Last week'},
+      {kind:'fee', title:'Participation fee — Smartwatch', sub:'Paid by card · example', amt:-9, when:'Last week'}
+    ],
+    waiting: {timer:null, notified:false},
+    live: null,
+    speed: 1,
+    settled: false, outcome: null, resultView: null,
+    calc: {value:1000, cost:900, fee:1, n:100, cr:20, start:0, cap:80},
+    sheet: null
+  };
+}
+S = freshState();
+const sel = () => S.auctions.find(a => a.id === S.selId);
+const joinedA = () => S.auctions.find(a => a.id === S.joinedId);
+
+/* ============================================================
+   Navigation & chrome
+   ============================================================ */
+const NOTES = [
+  {t:'The promise', b:['One-line value proposition and three simple steps.','Plain language: users <b>can</b> win. We never promise savings.','Two paths: try the customer flow, or jump to the business case.']},
+  {t:'One item per auction', b:['Each auction is a single product with a published retail value.','Fee ≈ 1% of value. Limited spots (e.g. 100).','The progress bar shows demand <b>before</b> any bidding starts.']},
+  {t:'Rules before payment', b:['Every rule is shown before the user pays.','The cost is explicit: what you pay now, and what comes back if you don\'t win.','Payment here is simulated — no card fields.']},
+  {t:'No risk before the start', b:['The auction only starts once every spot is filled.','Users can cancel any time before the start for a full refund.','If an auction never fills, everyone is refunded automatically.']},
+  {t:'The key screen', b:['Bidding is free. Each bid adds a fixed small amount.','The price can never pass <b>80% of retail</b>.','At the cap, the item goes to the participant with the <b>most bids</b> — a clear rule, not luck. Try the Bid button.']},
+  {t:'Clear outcomes', b:['Winner pays final price + shipping. No other fees.','Everyone else gets 20% of their fee back as credits.','Use the tabs to see both outcomes.']},
+  {t:'Transparent wallet', b:['Every fee, refund and credit is listed.','Credits can be reused or withdrawn as cash.','This keeps the model transparent and easy to audit.']},
+  {t:'', b:[]}
+];
+function renderChrome(){
+  // stepper
+  $('#stepper').innerHTML = STEPS.map((s,i)=>`<button class="step ${i<S.step?'done':''} ${i===S.step?'cur':''}" data-act="go" data-to="${i}" aria-label="${i+1}. ${s}" ${i===S.step?'aria-current="step"':''}><span class="bar"></span><span class="lbl">${i+1}. ${s}</span></button>`).join('');
+  $('#menuList').innerHTML = STEPS.map((s,i)=>`<button data-act="go" data-to="${i}" class="${i===S.step?'cur':''}"><span class="n">${i+1}</span>${s}</button>`).join('');
+  $('#stepLabel').innerHTML = `Step <b>${S.step+1}</b> of ${STEPS.length} · ${STEPS[S.step]}`;
+  $('#backBtn').disabled = S.step === 0;
+  $('#nextBtn').disabled = S.step === STEPS.length-1;
+  $('#nextBtn').textContent = S.step === 2 && !S.joined ? 'Join →' : S.step === 4 && S.live && !S.live.ended ? 'Skip to end →' : 'Next →';
+  document.querySelectorAll('[data-act="cur"]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.cur===S.cur));
+  $('#speedBtn').textContent = `⏩ Speed up auction (${S.speed}×)`;
+  const n = NOTES[S.step];
+  if (n && n.t) $('#narrator').innerHTML = `<h3>Investor notes · step ${S.step+1}</h3><h2>${n.t}</h2><ul>${n.b.map(x=>`<li>${x}</li>`).join('')}</ul><p class="xs muted" style="margin-top:12px">All numbers are examples.</p>`;
+}
+function go(step){
+  step = clamp(step, 0, STEPS.length-1);
+  closeSheet(true);
+  $('#menu').classList.remove('open');
+  // prerequisites when jumping ahead
+  if (step >= 3 && step <= 5) ensureJoined();
+  if (step >= 4 && step <= 5) fillUp(true);
+  if (step === 5 && !S.settled) finishLive(S.live && S.live.ended ? null : 'lose');
+  if (S.step === 4 && step !== 4) pauseLive();
+  S.step = step;
+  if (step === 5 && !S.resultView) S.resultView = S.outcome || 'lose';
+  render(true);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function render(anim){
+  renderChrome();
+  const inv = S.step === 7;
+  $('#customerView').hidden = inv;
+  $('#investorView').hidden = !inv;
+  if (inv){ renderInvestors(); return; }
+  const scr = $('#screen');
+  const keepScroll = !anim ? scr.scrollTop : 0;
+  scr.innerHTML = [renderLanding, renderList, renderDetails, renderWaiting, renderLive, renderResult, renderWallet][S.step]();
+  scr.scrollTop = keepScroll;
+  if (anim){ scr.classList.remove('enter'); void scr.offsetWidth; scr.classList.add('enter'); }
+  if (S.step === 3) startWaiting();
+  if (S.step === 4){ startLive(); updateLive(true); }
+  if (S.step !== 3) hideNotif();
+}
+
+/* ============================================================
+   Screens
+   ============================================================ */
+function renderLanding(){
+  return `
+  <div class="hero">
+    <div class="hero-badge">${ic('shield',14,2)} Fair, published rules</div>
+    <h1>Win top products below retail. Fair rules, free bidding.</h1>
+    <p>Pay a small fee to join an auction. Bid for free. The price can never go above 80% of the retail value.</p>
+  </div>
+  <div class="how">
+    <div class="card item"><span class="num">1</span><div><h4>Join</h4><p>Reserve a spot for about 1% of the item's value. Cancel before the start for a full refund.</p></div></div>
+    <div class="card item"><span class="num">2</span><div><h4>Bid free</h4><p>When all spots are filled, the auction starts. Each bid is free and adds a small fixed amount.</p></div></div>
+    <div class="card item"><span class="num">3</span><div><h4>Win under retail</h4><p>The winner pays the final price plus shipping — never more than 80% of retail. Others get 20% of their fee back as credits.</p></div></div>
+  </div>
+  <div class="stack">
+    <button class="btn block" data-act="go" data-to="1">Try the demo</button>
+    <button class="btn ghost block" data-act="go" data-to="7">For investors</button>
+  </div>
+  <p class="note">Demo with simulated data. All numbers are examples.</p>`;
+}
+const STATUS = {filling:['filling','Filling'], soon:['soon','Starting soon'], live:['live','Live'], ended:['ended','Ended']};
+function renderList(){
+  return `
+  <div class="screen-title"><h2>Auctions</h2><button class="wallet-chip" data-act="go" data-to="6">${ic('wallet',16)} ${m(S.credits)}</button></div>
+  <p class="small muted" style="margin:-6px 0 14px">Pick an auction to see its rules. Example listings.</p>
+  <div class="stack">
+  ${S.auctions.map(a=>{
+    const [cls,lbl] = STATUS[a.status];
+    const pct = a.filled/a.spots*100;
+    const extra = a.status==='live' ? `<div class="fill"><span>Current price <b style="color:var(--text)">${m(a.livePrice)}</b></span><span>Joining closed</span></div>`
+      : a.status==='ended' ? `<div class="fill"><span>Final price <b style="color:var(--text)">${m(a.finalPrice)}</b></span><span>${Math.round((1-a.finalPrice/a.value)*100)}% under retail</span></div>`
+      : a.status==='soon' ? `<div class="fill"><span>All ${a.spots} spots filled</span><span>${a.startsIn}</span></div><div class="progress"><span style="width:100%"></span></div>`
+      : `<div class="fill"><span>${a.filled}/${a.spots} spots filled</span><span>${a.spots-a.filled} left</span></div><div class="progress"><span style="width:${pct}%"></span></div>`;
+    return `<button class="acard" data-act="select" data-id="${a.id}">
+      <div class="row" style="align-items:flex-start">
+        <div class="ptile">${ic(a.type,30,1.5)}</div>
+        <div style="flex:1;min-width:0"><h3>${a.name}</h3><span class="chip ${cls}">${lbl}</span>${S.joinedId===a.id?' <span class="chip filling">Joined</span>':''}</div>
+      </div>
+      <div class="meta tnum">
+        <div><div class="k">Retail</div><div class="v">${mShort(a.value)}</div></div>
+        <div><div class="k">Fee</div><div class="v">${m(a.fee)}</div></div>
+        <div><div class="k">Start</div><div class="v">${mShort(a.start)}</div></div>
+        <div><div class="k">Cap</div><div class="v">${mShort(a.cap)}</div></div>
+      </div>
+      ${extra}
+    </button>`;}).join('')}
+  </div>
+  <p class="note">All auctions and figures are examples.</p>`;
+}
+function rulesList(a){
+  const r = [
+    ['tap', `Bidding is free. Each bid adds ${m(a.inc)} to the price.`],
+    ['clock', `The timer resets after every bid. When it runs out, the highest bidder wins.`],
+    ['cap', `The price can never go above ${m(a.cap)} (80% of retail). If it reaches the cap, bidding stops and the item goes to the participant with the most bids.`],
+    ['box', `The winner pays the final price plus shipping. No other fees.`],
+    ['refund', `Cancel any time before the start for a full refund. If the auction doesn't fill, everyone is refunded automatically.`],
+    ['coins', `If you don't win, 20% of your fee (${m(a.fee*0.2)}) comes back as credits. Use them in another auction or withdraw them as cash.`]
+  ];
+  return `<div class="card rules"><h3>${ic('doc',18)} Rules for this auction</h3><ul>${r.map(([i,t])=>`<li>${ic(i,18)}<span>${t}</span></li>`).join('')}</ul></div>`;
+}
+function renderDetails(){
+  const a = sel();
+  const [cls,lbl] = STATUS[a.status];
+  const joined = S.joinedId === a.id;
+  let cta;
+  if (joined) cta = `<button class="btn block" data-act="go" data-to="3">You're in — go to waiting room</button>`;
+  else if (S.joined) cta = `<button class="btn block" disabled>You already joined another auction in this demo</button>`;
+  else if (a.status==='filling') cta = `<button class="btn block" data-act="openJoin">Join auction · ${m(a.fee)}</button>`;
+  else if (a.status==='soon') cta = `<button class="btn block" disabled>All spots are taken</button>`;
+  else if (a.status==='live') cta = `<button class="btn block" disabled>Live now — joining is closed</button>`;
+  else cta = `<button class="btn block" disabled>This auction has ended</button>`;
+  return `
+  <button class="backlink" data-act="go" data-to="1">‹ Auctions</button>
+  <div class="ptile lg">${ic(a.type,84,1.2)}</div>
+  <div class="row between" style="margin:14px 0 4px"><h2 style="font-size:21px">${a.name}</h2><span class="chip ${cls}">${lbl}</span></div>
+  <p class="small muted" style="margin-bottom:12px">New, sealed, with manufacturer warranty. Illustration only.</p>
+  <div class="kv tnum" style="margin-bottom:14px">
+    <div><div class="k">Retail value</div><div class="v">${m(a.value)}</div></div>
+    <div><div class="k">Participation fee (1%)</div><div class="v">${m(a.fee)}</div></div>
+    <div><div class="k">Spots</div><div class="v">${a.filled}/${a.spots} filled</div></div>
+    <div><div class="k">Bid step</div><div class="v">+${m(a.inc)} · free</div></div>
+    <div><div class="k">Starting price</div><div class="v">${m(a.start)}</div></div>
+    <div><div class="k">Price cap (80%)</div><div class="v">${m(a.cap)}</div></div>
+  </div>
+  <div class="stack">
+    ${rulesList(a)}
+    <div class="cost">
+      <div class="big">You pay ${m(a.fee)} now.</div>
+      <div class="small">If you don't win, you get ${m(a.fee*0.2)} back in credits.<br>If you win, you pay the final price (between ${m(a.start)} and ${m(a.cap)}) plus shipping (${m(CONFIG.shipping)}, example).</div>
+    </div>
+    ${cta}
+  </div>
+  <p class="note">Example figures. Winning is not guaranteed.</p>`;
+}
+function renderWaiting(){
+  const a = joinedA();
+  const full = a.filled >= a.spots;
+  return `
+  <div class="screen-title"><h2>Waiting room</h2><span class="chip ${full?'soon':'filling'}" id="wStatus">${full?'Starting soon':'Filling'}</span></div>
+  <div class="row card" style="padding:12px;margin-bottom:12px"><div class="ptile" style="width:44px;height:44px">${ic(a.type,24,1.5)}</div><div><div style="font-weight:650">${a.name}</div><div class="xs muted">Your spot: #${S.spotNo} · Fee paid ${m(a.fee)}</div></div></div>
+  <div class="card bigcount">
+    <div class="num tnum" id="wCount">${a.filled}</div>
+    <div class="of">of ${a.spots} spots filled</div>
+    <div class="progress"><span id="wBar" style="width:${a.filled/a.spots*100}%"></span></div>
+    <p class="small muted" style="margin-top:12px" id="wMsg">${full?'All spots filled. Everyone has been notified.':'The auction starts automatically when every spot is filled.'}</p>
+  </div>
+  <div class="card" style="padding:14px 16px;margin:12px 0">
+    <ul class="timeline" id="wTimeline">${timelineHTML(a)}</ul>
+  </div>
+  <div class="stack">
+    <button class="btn block" data-act="startNow" id="wStart" ${full?'':'disabled'}>${full?'Enter live auction (skip the 10 min wait)':'Waiting for spots to fill…'}</button>
+    <button class="btn ghost block" data-act="cancel">Cancel and get a full refund (${m(a.fee)})</button>
+  </div>
+  <p class="note">Spots fill automatically in this demo.</p>`;
+}
+function timelineHTML(a){
+  const full = a.filled >= a.spots;
+  const notified = S.waiting.notified;
+  const items = [
+    ['You joined', true],
+    [`Spots filling (${a.filled}/${a.spots})`, full],
+    ['Everyone notified of the start time', notified],
+    ['Auction starts — bidding is free', false]
+  ];
+  let nowSet = false;
+  return items.map(([t,d],i)=>{
+    let c = d ? 'done' : (!nowSet ? (nowSet=true,'now') : '');
+    return `<li class="${c}"><span class="dot">${d?ic('check',12,3):''}</span><span>${t}</span></li>`;
+  }).join('');
+}
+function renderLive(){
+  const a = joinedA();
+  return `
+  <div class="live-top">
+    <div class="ptile">${ic(a.type,24,1.5)}</div>
+    <div style="flex:1;min-width:0"><div style="font-weight:650;font-size:15px">${a.name}</div><div class="xs muted">Retail ${m(a.value)} · ${a.spots} participants</div></div>
+    <span class="chip live" id="lvChip">Live</span>
+  </div>
+  <div class="card price-card">
+    <div class="xs muted">Current price</div>
+    <div class="price tnum" id="lvPrice">${m(a.start)}</div>
+    <div class="xs muted" id="lvLast" style="margin:2px 0 12px">Starting price</div>
+    <div class="progress" style="height:8px"><span id="lvBar" style="width:0%"></span></div>
+    <div class="range-ends tnum"><span>Start ${m(a.start)}</span><span>Cap ${m(a.cap)} (80%)</span></div>
+  </div>
+  <div class="card timer-row" style="margin-top:10px">
+    <div class="ring"><svg width="62" height="62" viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" fill="none" stroke="var(--surface-2)" stroke-width="6"/><circle id="lvRing" cx="31" cy="31" r="26" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg><div class="t tnum" id="lvTimer">15</div></div>
+    <div class="small"><b>Seconds left</b><br><span class="muted">Each bid resets the timer to at least 10 seconds.</span></div>
+  </div>
+  <div id="lvAction" style="margin:12px 0">
+    <button class="bid-btn" data-act="bid">Bid +${m(a.inc)}<small>Bidding is free</small></button>
+    <div class="row between small" style="margin-top:8px"><span class="muted">Your bids</span><b class="tnum" id="lvYour">0</b></div>
+  </div>
+  <div class="card panel" style="padding:12px 14px;margin-bottom:10px">
+    <h4>Most bids</h4>
+    <ol class="lb" id="lvLb"></ol>
+    <p class="xs muted" style="margin-top:6px">If the price reaches the cap, #1 here wins (ties: who reached that count first).</p>
+  </div>
+  <div class="card panel" style="padding:12px 14px">
+    <h4>Live bids</h4>
+    <ul class="feed tnum" id="lvFeed"></ul>
+  </div>
+  <p class="note">Other participants are simulated for this demo.</p>`;
+}
+function renderResult(){
+  const a = joinedA();
+  const L = S.live;
+  const final = L ? L.price : a.cap;
+  const total = final + CONFIG.shipping;
+  const v = S.resultView;
+  const winnerName = L && L.winner && L.winner !== 'You' ? L.winner : topBot().name;
+  const winnerBids = L && L.winner && L.winner !== 'You' ? L.counts[L.winner].n : topBot().n;
+  const real = S.outcome;
+  const tag = real && real !== v ? `<p class="xs muted" style="text-align:center;margin-bottom:10px">Preview of the other outcome — your actual result was “${real==='win'?'winner':'not a winner'}”.</p>` : '';
+  const body = v === 'win' ? `
+    <div class="card result-hero">
+      <div class="ic">${ic('trophy',30,1.8)}</div>
+      <h2>You won the ${a.name.split(',')[0]} for ${m(final)}</h2>
+      <p class="muted">That's ${m(a.value-final)} less than the retail value of ${m(a.value)}.</p>
+    </div>
+    <div class="card" style="padding:6px 16px;margin-top:12px">
+      <div class="line"><span>Final price</span><b class="tnum">${m(final)}</b></div>
+      <div class="line"><span>Shipping (example)</span><b class="tnum">${m(CONFIG.shipping)}</b></div>
+      <div class="line"><span>Total to pay</span><b class="tnum">${m(total)}</b></div>
+      <div class="line"><span class="muted">Other fees</span><span class="muted">None</span></div>
+    </div>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn block" data-act="payWin">Pay ${m(total)} (demo)</button>
+      <button class="btn ghost block" data-act="go" data-to="6">View wallet</button>
+    </div>` : `
+    <div class="card result-hero">
+      <div class="ic soft">${ic('coins',30,1.8)}</div>
+      <h2>This time someone else won.</h2>
+      <p class="muted">${m(a.fee*0.2)} in credits has been added to your wallet.</p>
+    </div>
+    <div class="card" style="padding:6px 16px;margin-top:12px">
+      <div class="line"><span>Winner</span><b>${winnerName}</b></div>
+      <div class="line"><span>Why</span><span>${L && L.reason==='timer' ? 'Highest bid when the timer ran out' : `Most bids at the cap (${winnerBids})`}</span></div>
+      <div class="line"><span>Final price</span><b class="tnum">${m(final)}</b></div>
+      <div class="line"><span>Your fee</span><span class="tnum">${m(a.fee)}</span></div>
+      <div class="line"><span>Credits back (20%)</span><b class="tnum" style="color:var(--accent)">${m(a.fee*0.2,{sign:true})}</b></div>
+    </div>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn block" data-act="another">Join another auction</button>
+      <button class="btn ghost block" data-act="go" data-to="6">View wallet</button>
+    </div>`;
+  return `
+  <div class="screen-title"><h2>Result</h2></div>
+  <div class="seg" style="display:flex;margin-bottom:14px">
+    <button style="flex:1" data-act="resultView" data-v="win" aria-pressed="${v==='win'}">Winner view</button>
+    <button style="flex:1" data-act="resultView" data-v="lose" aria-pressed="${v==='lose'}">Not a winner view</button>
+  </div>
+  ${tag}${body}
+  <p class="note">Example figures.</p>`;
+}
+function renderWallet(){
+  const icon = k => ({credit:'coins', fee:'tap', refund:'refund', purchase:'box', withdraw:'bank'}[k]);
+  return `
+  <div class="screen-title"><h2>Wallet</h2></div>
+  <div class="balance">
+    <div class="small" style="opacity:.85">Credits balance</div>
+    <div class="amt tnum">${m(S.credits)}</div>
+    <div class="xs" style="opacity:.85">Use in any auction, or withdraw as cash.</div>
+  </div>
+  <div class="row" style="margin:12px 0 18px;gap:8px">
+    <button class="btn block" data-act="withdraw" ${S.credits<=0?'disabled':''}>${ic('bank',18)} Withdraw to bank</button>
+    <button class="btn ghost block" data-act="go" data-to="1">Use in an auction</button>
+  </div>
+  <h3 style="font-size:15px;margin-bottom:6px">History</h3>
+  <div class="card" style="padding:2px 14px">
+    <ul class="hist">${S.history.map(h=>`<li><span class="ic ${h.amt>0?'pos':''}">${ic(icon(h.kind),18)}</span><div><div class="t">${h.title}</div><div class="d">${h.sub} · ${h.when}</div></div><span class="a tnum ${h.amt>0?'pos':''}">${m(h.amt,{sign:true})}</span></li>`).join('')}</ul>
+  </div>
+  <p class="note">Simulated transactions. Withdrawals are not real.</p>`;
+}
+
+/* ============================================================
+   Sheets (join / withdraw)
+   ============================================================ */
+function openSheet(html){
+  const el = $('#sheet');
+  el.innerHTML = `<div class="sheet-back" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  el.classList.add('open');
+}
+function closeSheet(){ const el = $('#sheet'); el.classList.remove('open'); el.innerHTML=''; }
+function joinSheet(){
+  const a = sel();
+  openSheet(`
+    <h3 style="font-size:18px;margin-bottom:4px">Confirm participation</h3>
+    <p class="small muted" style="margin-bottom:10px">${a.name}</p>
+    <div class="line"><span>Participation fee</span><b class="tnum">${m(a.fee)}</b></div>
+    <div class="line"><span>If you don't win</span><span class="tnum">${m(a.fee*0.2)} back in credits</span></div>
+    <div class="line"><span>Cancel before start</span><span>Full refund</span></div>
+    <div class="line"><span>Bidding</span><span>Free</span></div>
+    <button class="btn block" style="margin-top:14px" data-act="pay">Demo payment · ${m(a.fee)}</button>
+    <p class="note">No real payment. No card details needed.</p>`);
+}
+function joinAuction(a, silent){
+  S.joined = true; S.joinedId = a.id; S.selId = a.id;
+  a.filled += 1; S.spotNo = a.filled;
+  S.history.unshift({kind:'fee', title:`Participation fee — ${a.name.split(',')[0]}`, sub:'Paid by card (demo)', amt:-a.fee, when:'Today'});
+  if (!silent) toast(`Spot #${S.spotNo} reserved`);
+}
+function ensureJoined(){
+  if (S.joined) return;
+  let a = sel();
+  if (a.status !== 'filling'){ S.selId = 'phone'; a = sel(); }
+  joinAuction(a, true);
+}
+
+/* ============================================================
+   Waiting room
+   ============================================================ */
+function startWaiting(){
+  const a = joinedA();
+  if (S.waiting.timer || a.filled >= a.spots){ if (a.filled>=a.spots && !S.waiting.notified) notifyStart(); else if (S.waiting.notified) showNotif(); return; }
+  const tick = () => {
+    if (S.step !== 3){ S.waiting.timer = null; return; }
+    const b = joinedA();
+    b.filled = Math.min(b.spots, b.filled + (Math.random()<.35?2:1));
+    updateWaiting();
+    if (b.filled >= b.spots){ S.waiting.timer = null; b.status = 'soon'; setTimeout(notifyStart, 500); return; }
+    S.waiting.timer = setTimeout(tick, rand(90,260)/S.speed);
+  };
+  S.waiting.timer = setTimeout(tick, 600);
+}
+function updateWaiting(){
+  const a = joinedA(); if (!$('#wCount')) return;
+  $('#wCount').textContent = a.filled;
+  $('#wBar').style.width = (a.filled/a.spots*100)+'%';
+  $('#wTimeline').innerHTML = timelineHTML(a);
+  const full = a.filled >= a.spots;
+  if (full){
+    $('#wStatus').className='chip soon'; $('#wStatus').textContent='Starting soon';
+    $('#wMsg').textContent='All spots filled. Everyone has been notified.';
+    const b = $('#wStart'); b.disabled=false; b.textContent='Enter live auction (skip the 10 min wait)';
+  }
+}
+function notifyStart(){
+  if (S.step !== 3) return;
+  S.waiting.notified = true;
+  updateWaiting();
+  showNotif();
+}
+function showNotif(){
+  const a = joinedA();
+  $('#notif').innerHTML = `<div class="n"><span class="ic">${ic('bell',18,2)}</span><div><div class="t">${CONFIG.platform} · now</div><div class="d">All spots are filled. Your auction “${a.name.split(',')[0]}” starts in 10 minutes.</div></div></div>`;
+  requestAnimationFrame(()=>$('#notif').classList.add('show'));
+  clearTimeout(showNotif._t); showNotif._t = setTimeout(hideNotif, 6000);
+}
+function hideNotif(){ $('#notif').classList.remove('show'); }
+function fillUp(){
+  const a = joinedA(); if (!a) return;
+  clearTimeout(S.waiting.timer); S.waiting.timer = null;
+  a.filled = a.spots; S.waiting.notified = true;
+  if (a.status === 'filling') a.status = 'soon';
+}
+function cancelJoin(){
+  const a = joinedA();
+  clearTimeout(S.waiting.timer); S.waiting.timer = null;
+  S.history.unshift({kind:'refund', title:`Full refund — ${a.name.split(',')[0]}`, sub:'Cancelled before the start', amt:a.fee, when:'Today'});
+  a.filled = Math.max(0, a.filled - 1 - Math.round(rand(0,2)));
+  a.status = 'filling';
+  S.joined = false; S.joinedId = null; S.spotNo = null; S.waiting.notified = false;
+  S.live = null; S.settled = false; S.outcome = null; S.resultView = null;
+  toast(`Cancelled. ${m(a.fee)} refunded in full.`);
+  go(1);
+}
+
+/* ============================================================
+   Live auction engine (all simulated)
+   ============================================================ */
+const TIMER_START = 15, TIMER_RESET = 10;
+function newLive(a){
+  const counts = {You:{n:0, at:0}};
+  BOTS.forEach(b => counts[b] = {n:0, at:0});
+  return {price:a.start, timer:TIMER_START, nextBot:rand(.4,1), counts, seq:0, feed:[], last:null,
+          ended:false, reason:null, winner:null, interval:null, dirty:true, newFeed:0};
+}
+function startLive(){
+  const a = joinedA();
+  a.status = 'live';
+  if (!S.live) S.live = newLive(a);
+  if (S.live.ended || S.live.interval) return;
+  S.live.interval = setInterval(liveTick, 100);
+}
+function pauseLive(){ if (S.live && S.live.interval){ clearInterval(S.live.interval); S.live.interval = null; } }
+function pickBot(){
+  const tot = BOT_W.reduce((x,y)=>x+y,0); let r = Math.random()*tot;
+  for (let i=0;i<BOTS.length;i++){ r -= BOT_W[i]; if (r<=0) return BOTS[i]; }
+  return BOTS[0];
+}
+function placeBid(who){
+  const L = S.live, a = joinedA();
+  if (!L || L.ended) return;
+  L.price = Math.min(a.cap, L.price + a.inc);
+  L.seq++;
+  L.counts[who].n++; L.counts[who].at = L.seq;
+  L.last = who;
+  L.timer = Math.max(L.timer, TIMER_RESET);
+  L.feed.unshift({who, price:L.price}); if (L.feed.length > 30) L.feed.pop();
+  L.newFeed++; L.dirty = true;
+  if (L.price >= a.cap) endLive('cap');
+}
+function simulate(dt){
+  const L = S.live;
+  let rem = dt;
+  while (rem > 0 && !L.ended){
+    const st = Math.min(rem, L.nextBot);
+    L.timer -= st; L.nextBot -= st; rem -= st;
+    if (L.timer <= 0){ L.timer = 0; endLive('timer'); break; }
+    if (L.nextBot <= 1e-9){ placeBid(pickBot()); L.nextBot = rand(.1,.4); }
+  }
+  L.dirty = true;
+}
+function liveTick(){
+  if (!S.live || S.live.ended) return pauseLive();
+  simulate(0.1 * S.speed);
+  updateLive();
+}
+function ranked(){
+  const L = S.live;
+  return Object.entries(L.counts).map(([name,c])=>({name, n:c.n, at:c.at}))
+    .sort((x,y)=> y.n - x.n || (x.at||1e12) - (y.at||1e12));
+}
+function topBot(){
+  if (S.live){ const r = ranked().filter(x=>x.name!=='You'); return r[0]; }
+  return {name:BOTS[0], n:41};
+}
+function endLive(reason){
+  const L = S.live; if (L.ended) return;
+  L.ended = true; L.reason = reason; pauseLive();
+  L.winner = reason === 'cap' ? ranked()[0].name : L.last;
+  if (reason === 'cap') L.timer = Math.max(L.timer, 0);
+  joinedA().status = 'ended';
+  if (!S._forcing) settle(L.winner === 'You' ? 'win' : 'lose');
+  L.dirty = true;
+  if (S.step === 4){ updateLive(true); renderChrome(); }
+}
+function finishLive(forced){
+  // forced: 'win' | 'lose' | null(real)
+  const a = joinedA();
+  if (!S.live) S.live = newLive(a);
+  const L = S.live;
+  if (!L.ended && forced){
+    // fast-forward bots to the end, then make the requested outcome true under the published rule
+    S._forcing = true;
+    let guard = 0; while (!L.ended && guard++ < 20000) simulate(0.5);
+    S._forcing = false;
+  }
+  if (forced && !S.settled){
+    // adjust counts so the published rule produces the requested outcome
+    const r = ranked(); const top = r.find(x=>x.name!=='You');
+    if (forced === 'win') L.counts.You.n = Math.max(L.counts.You.n, top.n + 3);
+    else if (L.counts.You.n >= top.n) L.counts[top.name].n = L.counts.You.n + 2;
+    L.winner = forced === 'win' ? 'You' : ranked()[0].name;
+    settle(forced);
+  }
+}
+function settle(outcome){
+  if (S.settled) return;
+  S.settled = true; S.outcome = outcome; S.resultView = outcome;
+  const a = joinedA(), L = S.live;
+  if (outcome === 'lose'){
+    S.credits += a.fee*0.2;
+    S.history.unshift({kind:'credit', title:`Credits back — ${a.name.split(',')[0]}`, sub:'20% of your fee', amt:a.fee*0.2, when:'Today'});
+  } else {
+    S.history.unshift({kind:'purchase', title:`Won — ${a.name.split(',')[0]}`, sub:`Final price ${m(L?L.price:a.cap)} + shipping`, amt:-((L?L.price:a.cap)+CONFIG.shipping), when:'Today'});
+  }
+}
+function updateLive(full){
+  const L = S.live; if (!L || !$('#lvPrice')) return;
+  if (!L.dirty && !full) return;
+  L.dirty = false;
+  const a = joinedA();
+  const pEl = $('#lvPrice');
+  const txt = m(L.price);
+  if (pEl.textContent !== txt){ pEl.textContent = txt; pEl.classList.remove('bump'); void pEl.offsetWidth; pEl.classList.add('bump'); }
+  $('#lvLast').textContent = L.last ? `Last bid: ${L.last === 'You' ? 'You' : L.last}` : 'Starting price';
+  $('#lvBar').style.width = ((L.price - a.start)/(a.cap - a.start)*100) + '%';
+  $('#lvTimer').textContent = Math.ceil(L.timer);
+  $('#lvRing').style.strokeDashoffset = 163.4 * (1 - L.timer/TIMER_START);
+  if ($('#lvYour')) $('#lvYour').textContent = L.counts.You.n;
+  // feed
+  const items = L.feed.slice(0,7);
+  $('#lvFeed').innerHTML = items.length ? items.map((f,i)=>`<li class="${f.who==='You'?'me':''} ${i<Math.min(L.newFeed,3)?'new':''}"><span>${f.who}</span><span>${m(f.price)}</span></li>`).join('') : `<li><span class="muted">Waiting for the first bid…</span></li>`;
+  L.newFeed = 0;
+  // leaderboard
+  const r = ranked(); const max = Math.max(1, r[0].n);
+  let list = r.slice(0,5); if (!list.find(x=>x.name==='You')) list.push(r.find(x=>x.name==='You'));
+  $('#lvLb').innerHTML = list.map(x=>`<li class="${x.name==='You'?'me':''}"><span class="r">${r.indexOf(x)+1}</span><span>${x.name}</span><span class="tnum">${x.n} bid${x.n===1?'':'s'}</span><span class="bar"><span style="width:${x.n/max*100}%"></span></span></li>`).join('');
+  // ended state
+  if (L.ended && !$('#lvEnd')){
+    $('#lvChip').className = 'chip ended'; $('#lvChip').textContent = 'Ended';
+    const w = L.winner, wn = L.counts[w].n;
+    const msg = L.reason === 'cap'
+      ? `<h3>${ic('cap',18)} Cap reached at ${m(L.price)}</h3><p class="small">Bidding has stopped. The price can't go higher than 80% of retail. By the published rule, the item goes to the participant with the most bids: <b>${w === 'You' ? 'You' : w}</b> (${wn} bids).</p>`
+      : `<h3>${ic('clock',18)} Time's up at ${m(L.price)}</h3><p class="small">The timer ran out. The highest bidder wins: <b>${w}</b>.</p>`;
+    $('#lvAction').innerHTML = `<div class="endcard" id="lvEnd">${msg}<button class="btn block" style="margin-top:12px" data-act="go" data-to="5">See your result</button></div>`;
+  }
+}
+
+/* ============================================================
+   Investor section
+   ============================================================ */
+function calcModel(c){
+  const V=c.value, C=c.cost, f=c.fee/100, N=Math.max(1,Math.round(c.n)), cr=c.cr/100;
+  const feeEach = V*f, collected = feeEach*N, returned = feeEach*cr*(N-1), kept = collected - returned;
+  const startP = V*c.start/100, capP = V*c.cap/100;
+  return {V,C,N,feeEach,collected,returned,kept,startP,capP,
+    profitStart: startP + kept - C, profitCap: capP + kept - C, breakEven: C - kept};
+}
+function renderInvestors(){
+  const c = S.calc;
+  const field = (k,label,unit,step,money) => `<div class="field"><label for="f_${k}">${label}</label><div class="in"><input id="f_${k}" type="number" inputmode="decimal" step="${step}" min="0" data-calc="${k}" data-money="${money?1:0}" value="${money ? +(c[k]*RATES[S.cur]).toFixed(2) : c[k]}"><span class="unit">${unit}</span></div></div>`;
+  const cu = S.cur;
+  $('#investorView').innerHTML = `
+  <div class="inv-hero">
+    <span class="eyebrow">For investors</span>
+    <h1>${CONFIG.platform}: fair, capped auctions for top products</h1>
+    <p>Customers pay a small, refundable participation fee and bid for free. The price is capped at 80% of retail. Revenue comes from the winning price plus the part of fees not returned as credits.</p>
+    <div class="inv-nav">
+      <a href="#s-model">Business model</a><a href="#s-calc">Unit economics</a><a href="#s-cust">Why customers like it</a><a href="#s-legal">Legal & trust</a><a href="#s-road">Roadmap</a><a href="#s-contact">Contact</a>
+      <a href="#" data-act="go" data-to="0" style="color:var(--accent)">← Back to the customer demo</a>
+    </div>
+  </div>
+
+  <section class="card section" id="s-model">
+    <span class="eyebrow">Business model</span>
+    <h2>Two revenue sources per auction</h2>
+    <p class="lead">Every completed auction collects participation fees from all participants and the final price from the winner. Together they cover the item cost.</p>
+    <div class="flow">
+      <div class="box"><h4>1 · Participation fees</h4><p>About 1% of the item's value × number of spots. Example: ${m(10)} × 100 = ${m(1000)}.</p></div>
+      <div class="box"><h4>2 · Credits returned</h4><p>Non-winners get 20% of their fee back as credits. Example: 99 × ${m(2)} = ${m(198)}.</p></div>
+      <div class="box"><h4>3 · Winner's final price</h4><p>Between 0 and 80% of retail. Example: ${m(0)}–${m(800)}. Shipping is paid by the winner.</p></div>
+      <div class="box" style="background:var(--accent-soft)"><h4>= Margin per auction</h4><p>Fees kept + final price − item cost. Unfilled auctions are refunded in full, so no item is bought without a full room.</p></div>
+    </div>
+  </section>
+
+  <section class="card section" id="s-calc">
+    <span class="eyebrow">Interactive</span>
+    <h2>Unit economics calculator</h2>
+    <p class="lead">Change any input. Default example: value ${m(1000)}, cost ${m(900)}, fee 1%, 100 participants, 20% credits back, start 0%, cap 80%.</p>
+    <div class="inputs">
+      ${field('value','Item value (retail)',cu,1,true)}
+      ${field('cost','Item cost to us',cu,1,true)}
+      ${field('fee','Participation fee','% of value',0.1)}
+      ${field('n','Participants','spots',1)}
+      ${field('cr','Credits back to non-winners','% of fee',1)}
+      ${field('start','Starting price','% of value',1)}
+      ${field('cap','Price cap','% of value',1)}
+      <div class="field" style="display:flex;align-items:flex-end"><button class="btn ghost block" data-act="calcReset">Reset to example</button></div>
+    </div>
+    <div id="calcOut"></div>
+    <div class="chart-wrap" id="chartWrap"></div>
+    <p class="xs muted" style="margin-top:8px">Excludes payment processing, marketing, support and taxes. Assumes all credits are redeemed or withdrawn. Shipping is paid by the winner. Example figures only.</p>
+  </section>
+
+  <section class="card section" id="s-cust">
+    <span class="eyebrow">Demand</span>
+    <h2>Why customers like it</h2>
+    <p class="lead">A simple deal with clear limits — no surprises.</p>
+    <div class="grid4">
+      ${[['cap','Never more than 80% of retail','The price is capped. A winner never pays more than 80% of the published retail value (+ shipping).'],
+         ['tap','Bidding is free','Pay once to join. Every bid after that costs nothing.'],
+         ['refund','Full refund before start','Cancel any time before the auction starts. Unfilled auctions are refunded automatically.'],
+         ['coins','Credits back','Not winning still returns 20% of the fee as credits — reusable or withdrawable as cash.']]
+        .map(([i,t,d])=>`<div class="feature"><div class="fi">${ic(i,20)}</div><h4>${t}</h4><p>${d}</p></div>`).join('')}
+    </div>
+  </section>
+
+  <section class="card section" id="s-legal">
+    <span class="eyebrow">Legal & trust</span>
+    <h2>An auction, not a game of chance</h2>
+    <p class="lead">The outcome depends on participants' bidding, under rules published before anyone pays.</p>
+    <div class="grid3">
+      ${[['users','Winner chosen by bidding rules','Highest bidder when the timer ends, or the most bids at the cap. No random draw at any point.'],
+         ['doc','Small fee, shown upfront','The participation fee and every rule are shown before payment, in plain language.'],
+         ['refund','Full refunds before start','Users can cancel before the start. Unfilled auctions refund everyone automatically.'],
+         ['shield','No fake bidders','Only real, paid participants can bid. (Simulated bidders exist only in this demo.)'],
+         ['bank','Credits withdrawable as cash','Credits are not locked in. Users can withdraw them to a bank account.'],
+         ['doc','Legal opinion per market','We plan to obtain a legal opinion in each launch market before going live.']]
+        .map(([i,t,d])=>`<div class="feature"><div class="fi">${ic(i,20)}</div><h4>${t}</h4><p>${d}</p></div>`).join('')}
+    </div>
+    <p class="xs muted" style="margin-top:12px">This is not legal advice. Regulatory treatment varies by country and must be confirmed locally.</p>
+  </section>
+
+  <section class="card section" id="s-road">
+    <span class="eyebrow">Roadmap</span>
+    <h2>From MVP to expansion</h2>
+    <p class="lead">Placeholders — edit in the CONFIG block at the top of the script.</p>
+    <div class="road">${CONFIG.roadmap.map((r,i)=>`<div class="ph ${i===0?'now':''}"><div class="when">${esc(r.when.replace('[first market]',CONFIG.firstMarket))}</div><h4>${esc(r.title.replace('[first market]',CONFIG.firstMarket))}</h4><p>${esc(r.text)}</p></div>`).join('')}</div>
+  </section>
+
+  <section class="card section" id="s-contact">
+    <span class="eyebrow">Contact</span>
+    <h2>Let's talk</h2>
+    <div class="contact" style="margin-top:10px">
+      <div><div class="xs muted">Founder</div><div class="sel">${esc(CONFIG.name)}</div></div>
+      <div><div class="xs muted">Email</div><div class="sel" id="emailTxt">${esc(CONFIG.email)}</div></div>
+      <button class="btn ghost sm" data-act="copyEmail">Copy email</button>
+    </div>
+  </section>`;
+  updateCalc();
+}
+function updateCalc(){
+  const r = calcModel(S.calc);
+  let be;
+  if (r.breakEven <= 0) be = {t:'Fees alone cover the item cost', cls:''};
+  else if (r.breakEven <= r.startP) be = {t:'Below the starting price — every completed auction covers the item cost', cls:''};
+  else if (r.breakEven <= r.capP) be = {t:'Between start and cap — low final prices lose money', cls:'warn'};
+  else be = {t:'Above the cap — this setup loses money on every auction', cls:'warn'};
+  const pct = x => r.C > 0 ? ` · ${Math.round(x/r.C*100)}% of cost` : '';
+  $('#calcOut').innerHTML = `
+    <div class="grid3">
+      <div class="stat"><div class="k">Fees collected</div><div class="v tnum">${m(r.collected)}</div><div class="s">${r.N} × ${m(r.feeEach)}</div></div>
+      <div class="stat"><div class="k">Credits returned</div><div class="v tnum">${m(-r.returned)}</div><div class="s">${r.N-1} non-winners × ${m(r.feeEach*S.calc.cr/100)}</div></div>
+      <div class="stat hl"><div class="k">Fees kept</div><div class="v tnum">${m(r.kept)}</div><div class="s">Collected − credits returned</div></div>
+      <div class="stat"><div class="k">Profit at starting price (${m(r.startP)})</div><div class="v tnum">${m(r.profitStart)}</div><div class="s">Worst case${pct(r.profitStart)}</div></div>
+      <div class="stat"><div class="k">Profit at the cap (${m(r.capP)})</div><div class="v tnum">${m(r.profitCap)}</div><div class="s">Best case${pct(r.profitCap)}</div></div>
+      <div class="stat ${be.cls?'':'hl'}"><div class="k">Break-even final price</div><div class="v tnum">${m(r.breakEven)}</div><div class="s">${be.t}</div></div>
+    </div>
+    ${be.cls ? `<div class="callout warn">${be.t}. Try a higher fee, a lower credits-back %, or a higher starting price.</div>` : ''}`;
+  drawChart(r);
+}
+function niceTicks(lo, hi, n){
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(x=>x*mag).find(x=>span/x <= n) || 10*mag;
+  const out = []; for (let v = Math.ceil(lo/step)*step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function drawChart(r){
+  const W=720, H=290, ml=62, mr=18, mt=28, mb=40;
+  const xMax = Math.max(r.capP, r.breakEven, 1) * 1.08;
+  const prof = x => x + r.kept - r.C;
+  const ys = [prof(0), prof(xMax), 0];
+  let yLo = Math.min(...ys), yHi = Math.max(...ys);
+  const pad = (yHi - yLo) * .08 || 10; yLo -= pad; yHi += pad;
+  const X = v => ml + v/xMax*(W-ml-mr), Y = v => mt + (yHi - v)/(yHi - yLo)*(H-mt-mb);
+  const xt = niceTicks(0, xMax, 6), yt = niceTicks(yLo, yHi, 5);
+  const mark = (x, label, anchor) => `<g><circle cx="${X(x)}" cy="${Y(prof(x))}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text x="${X(x)+(anchor==='end'?-9:9)}" y="${Y(prof(x))-9}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="var(--text)">${label}</text></g>`;
+  const beIn = r.breakEven > 0 && r.breakEven < xMax;
+  $('#chartWrap').innerHTML = `
+    <div class="row between" style="margin-bottom:6px"><b style="font-size:14px">Profit per auction by final price</b><span class="xs muted">Shaded: possible final prices (start → cap)</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of profit per auction versus final price">
+      <rect x="${X(r.startP)}" y="${mt}" width="${Math.max(0,X(r.capP)-X(r.startP))}" height="${H-mt-mb}" fill="var(--accent-soft)"/>
+      <g class="axis">
+        ${yt.map(v=>`<line x1="${ml}" x2="${W-mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--border)" stroke-width="1" ${v===0?'':'stroke-dasharray="2 4"'}/><text x="${ml-8}" y="${Y(v)+4}" text-anchor="end">${mShort(v)}</text>`).join('')}
+        ${xt.map(v=>`<text x="${X(v)}" y="${H-mb+18}" text-anchor="middle">${mShort(v)}</text>`).join('')}
+        <text x="${(ml+W-mr)/2}" y="${H-4}" text-anchor="middle">Final price paid by the winner</text>
+      </g>
+      ${yLo<0&&yHi>0?`<line x1="${ml}" x2="${W-mr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)" stroke-width="1"/>`:''}
+      <line x1="${X(0)}" y1="${Y(prof(0))}" x2="${X(xMax)}" y2="${Y(prof(xMax))}" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+      ${beIn ? `<g><line x1="${X(r.breakEven)}" x2="${X(r.breakEven)}" y1="${mt}" y2="${H-mb}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${X(r.breakEven)+5}" y="${mt+12}" font-size="11" fill="var(--muted)">Break-even ${mShort(r.breakEven)}</text></g>` : ''}
+      ${mark(r.startP, 'Start: '+m(r.profitStart), X(r.startP) < W*0.35 ? 'start' : 'end')}
+      ${mark(r.capP, 'Cap: '+m(r.profitCap), 'end')}
+      <line id="chX" y1="${mt}" y2="${H-mb}" stroke="var(--text)" stroke-width="1" opacity="0"/>
+      <circle id="chDot" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" opacity="0"/>
+      <rect id="chHit" x="${ml}" y="${mt}" width="${W-ml-mr}" height="${H-mt-mb}" fill="transparent"/>
+    </svg>
+    <div class="chart-tip" id="chTip"></div>
+    <details class="tablev"><summary>Show as table</summary>
+      <table class="tbl tnum"><thead><tr><th>Final price</th><th>Fees kept</th><th>Item cost</th><th>Profit</th></tr></thead><tbody>
+      ${[0,.25,.5,.75,1].map(t=>{const p=r.startP+(r.capP-r.startP)*t;return `<tr><td>${m(p)}</td><td>${m(r.kept)}</td><td>${m(-r.C)}</td><td><b>${m(prof(p))}</b></td></tr>`}).join('')}
+      </tbody></table></details>`;
+  const svg = $('#chartWrap svg'), hit = $('#chHit'), tip = $('#chTip'), lx = $('#chX'), dot = $('#chDot');
+  const move = e => {
+    const b = svg.getBoundingClientRect(), sx = (e.clientX - b.left) / b.width * W;
+    const v = clamp((sx - ml) / (W-ml-mr) * xMax, 0, xMax);
+    const inRange = v >= r.startP - 1e-6 && v <= r.capP + 1e-6;
+    lx.setAttribute('x1', X(v)); lx.setAttribute('x2', X(v)); lx.setAttribute('opacity', .35);
+    dot.setAttribute('cx', X(v)); dot.setAttribute('cy', Y(prof(v))); dot.setAttribute('opacity', 1);
+    tip.innerHTML = `Final price <b>${m(v,{dec:0})}</b><br>Profit <b>${m(prof(v),{dec:0})}</b>${inRange?'':'<br><span class="xs muted">Outside start–cap range</span>'}`;
+    tip.style.left = (X(v)/W*b.width) + 'px'; tip.style.top = (Y(prof(v))/H*b.height + 30) + 'px';
+    tip.classList.add('on');
+  };
+  const leave = () => { tip.classList.remove('on'); lx.setAttribute('opacity',0); dot.setAttribute('opacity',0); };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', leave);
+}
+
+/* ============================================================
+   Actions
+   ============================================================ */
+const actions = {
+  go: el => go(+el.dataset.to),
+  next: () => {
+    if (S.step === 2 && !S.joined){ const a = sel(); if (a.status === 'filling') return joinSheet(); }
+    if (S.step === 4 && S.live && !S.live.ended){ let g=0; while(!S.live.ended && g++<20000) simulate(0.5); updateLive(true); renderChrome(); return; }
+    go(S.step + 1);
+  },
+  back: () => go(S.step - 1),
+  select: el => { S.selId = el.dataset.id; go(2); },
+  openJoin: () => joinSheet(),
+  pay: () => {
+    const sh = $('#sheet .sheet');
+    sh.innerHTML = `<div class="grab"></div><div class="spinner"></div><p style="text-align:center" class="muted">Processing demo payment…</p>`;
+    setTimeout(()=>{
+      joinAuction(sel(), true);
+      sh.innerHTML = `<div class="grab"></div><div class="okmark">${ic('check',30,2.5)}</div><h3 style="text-align:center;font-size:19px">You're in!</h3><p style="text-align:center" class="muted small">Spot #${S.spotNo} reserved for ${esc(sel().name)}.<br>We'll notify you when all spots are filled.</p><button class="btn block" style="margin-top:16px" data-act="go" data-to="3">Go to waiting room</button>`;
+      renderChrome();
+    }, 1000);
+  },
+  closeSheet: () => closeSheet(),
+  cancel: () => cancelJoin(),
+  startNow: () => go(4),
+  bid: () => { placeBid('You'); updateLive(); },
+  resultView: el => { S.resultView = el.dataset.v; render(false); },
+  another: () => {
+    if (S.settled){ S.joined=false; S.joinedId=null; S.spotNo=null; S.live=null; S.settled=false; S.outcome=null; S.resultView=null; S.waiting.notified=false; }
+    go(1);
+  },
+  payWin: () => toast('Demo: payment simulated. Delivery tracking would appear here.'),
+  withdraw: () => openSheet(`
+    <h3 style="font-size:18px;margin-bottom:10px">Withdraw credits</h3>
+    <div class="line"><span>Amount</span><b class="tnum">${m(S.credits)}</b></div>
+    <div class="line"><span>To</span><span>Bank account •••• 4021 (demo)</span></div>
+    <div class="line"><span>Fee</span><span>None</span></div>
+    <button class="btn block" style="margin-top:14px" data-act="confirmWithdraw">Confirm withdrawal (demo)</button>
+    <p class="note">Simulated. No money moves.</p>`),
+  confirmWithdraw: () => {
+    S.history.unshift({kind:'withdraw', title:'Withdrawal to bank', sub:'Simulated transfer', amt:-S.credits, when:'Today'});
+    const amt = S.credits; S.credits = 0; closeSheet(); render(false); toast(`Withdrawal of ${m(amt)} requested (demo)`);
+  },
+  restart: () => {
+    pauseLive(); clearTimeout(S.waiting.timer); hideNotif(); closeSheet();
+    const cur = S.cur, sp = 1; S = freshState(); S.cur = cur; S.speed = sp;
+    go(0); toast('Demo restarted');
+  },
+  speed: () => {
+    S.speed = S.speed === 1 ? 4 : S.speed === 4 ? 16 : 1;
+    renderChrome(); toast(`Simulation speed: ${S.speed}×`);
+    if (S.step !== 4 && S.step !== 3 && S.joined && !(S.live && S.live.ended)) toast(`Speed ${S.speed}× — applies on the live auction`);
+  },
+  showWin: () => { ensureJoined(); fillUp(); finishLive('win'); S.resultView = 'win'; go(5); },
+  showLose: () => { ensureJoined(); fillUp(); finishLive('lose'); S.resultView = 'lose'; go(5); },
+  cur: el => { S.cur = el.dataset.cur; render(false); if (S.step===4) updateLive(true); },
+  theme: () => {
+    const root = document.documentElement;
+    const isDark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = isDark ? 'light' : 'dark';
+    try { localStorage.setItem('demo-theme', root.dataset.theme); } catch(e){}
+  },
+  menu: () => $('#menu').classList.toggle('open'),
+  panel: () => { const p = $('#demoPanel'); p.classList.toggle('collapsed'); $('#panelToggle').textContent = p.classList.contains('collapsed') ? '+' : '–'; },
+  calcReset: () => { S.calc = freshState().calc; renderInvestors(); },
+  copyEmail: () => {
+    const t = CONFIG.email;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>toast('Email copied'), ()=>{
+      const r = document.createRange(); r.selectNodeContents($('#emailTxt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Email selected — press Ctrl/Cmd + C');
+    });
+  }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el){ if (!e.target.closest('#menu')) $('#menu').classList.remove('open'); return; }
+  if (el.tagName === 'A') e.preventDefault();
+  const f = actions[el.dataset.act]; if (f) f(el);
+});
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.calc; if (!k) return;
+  let v = parseFloat(e.target.value); if (!isFinite(v) || v < 0) return;
+  if (e.target.dataset.money === '1') v = v / RATES[S.cur];
+  if (k === 'n') v = Math.max(1, Math.round(v));
+  S.calc[k] = v; updateCalc();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input')) return;
+  if (e.key === 'ArrowRight') actions.next();
+  if (e.key === 'ArrowLeft' && S.step > 0) actions.back();
+  if (e.key === 'Escape'){ closeSheet(); $('#menu').classList.remove('open'); }
+});
+
+// init
+try { const t = localStorage.getItem('demo-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+document.title = CONFIG.platform.startsWith('[') ? 'Auction Platform Demo' : CONFIG.platform + ' Demo';
+$('#brandName').textContent = CONFIG.platform;
+if (innerWidth <= 520){ $('#demoPanel').classList.add('collapsed'); $('#panelToggle').textContent = '+'; }
+render(true);
+</script>
+</body>
+</html>
